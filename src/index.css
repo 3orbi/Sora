@@ -3,17 +3,50 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Dark Spotify-like Theme */
+    --background: 0 0% 7%;              /* #121212 */
+    --foreground: 0 0% 90%;             /* #E6E6E6 */
+    --card: 0 0% 10%;                   /* #1A1A1A */
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 12%;                /* #1E1E1E */
+    --popover-foreground: 0 0% 90%;
+    --primary: 142 70% 45%;             /* #1DB954 Spotify green */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 15%;              /* #262626 */
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 15%;                  /* #262626 */
+    --muted-foreground: 0 0% 55%;       /* #8C8C8C */
+    --accent: 0 0% 18%;                 /* #2D2D2D */
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 142 70% 45%;
+    --radius: 0.75rem;
+
+    --surface-secondary: 0 0% 10%;      /* #1A1A1A */
+    --surface-tertiary: 0 0% 14%;       /* #242424 */
+    --surface-quaternary: 0 0% 18%;     /* #2D2D2D */
+    --text-heading: 0 0% 95%;           /* #F2F2F2 */
+    --text-subheading: 0 0% 80%;        /* #CCCCCC */
+    --text-body: 0 0% 70%;              /* #B3B3B3 */
+    --text-muted: 0 0% 45%;             /* #737373 */
+    --text-placeholder: 0 0% 35%;       /* #595959 */
+    --accent-green: 142 70% 45%;        /* #1DB954 */
+    --accent-green-light: 142 70% 55%;
+  }
+}
+
+@layer base {
   * {
+    @apply border-border;
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
   }
   body {
-    background-color: #FCF9F9;
-    color: #4D4545;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   ::-webkit-scrollbar {
@@ -24,10 +57,10 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(208, 196, 196, 0.5);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(208, 196, 196, 0.8);
+    background: rgba(255, 255, 255, 0.3);
   }
 }

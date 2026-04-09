@@ -1,11 +1,14 @@
+import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { Heart, MoreHorizontal, Play, Calendar, Star, ShoppingCart, CheckCircle, Download } from "lucide-react";
-
-const tracks = [
-  { num: "01", title: "Pocahontas", from: "Grand Garçon", duration: "3:24", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=56&h=56&fit=crop" },
-  { num: "02", title: "Sex Model", from: "Single Release", duration: "2:48", image: "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=56&h=56&fit=crop" },
-  { num: "03", title: "Tu dors?", from: "Grand Garçon", duration: "3:12", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=56&h=56&fit=crop" },
-];
+import MiniPlayer from "../components/MiniPlayer";
+import { usePlayer } from "@/contexts/PlayerContext";
+import { artists, getArtist, getArtistTracks, tracks as allTracks } from "@/data/musicData";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Heart, MoreHorizontal, Play, Pause, Calendar, Star, ShoppingCart, CheckCircle, Share2 } from "lucide-react";
+import { useState } from "react";
 
 const liveDates = [
   { month: "DEC", day: "4", city: "MARSEILLE", country: "France", status: "SOLD OUT", available: false },
@@ -20,99 +23,83 @@ const merch = [
   { name: "Maillot 'Enna'+CD", price: "50€", image: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=200&h=200&fit=crop", limited: false },
 ];
 
-const galleryImages = [
-  "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop",
-  "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=200&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=200&fit=crop",
-  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=200&h=250&fit=crop",
-];
-
 const ArtistProfile = () => {
+  const { id } = useParams<{ id: string }>();
+  const { playTrack, currentTrack, isPlaying, togglePlay, toggleLike, liked } = usePlayer();
+  const [subscribed, setSubscribed] = useState(false);
+  const [shared, setShared] = useState(false);
+
+  const artist = getArtist(id || "plk") || artists[0];
+  const artistTracks = getArtistTracks(artist.id);
+
+  const handlePlayAll = () => {
+    if (artistTracks.length) playTrack(artistTracks[0], artistTracks);
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    });
+  };
+
   return (
-    <div style={{ backgroundColor: "#FCF9F9", minHeight: "100vh" }}>
+    <div className="bg-background min-h-screen pb-24">
       <Navbar />
 
       {/* Hero */}
       <div className="px-8 pt-24">
-        <div
-          className="relative overflow-hidden mx-auto"
-          style={{
-            borderRadius: 48,
-            maxWidth: 1280,
-            height: 480,
-          }}
-        >
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: "url(https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1400&h=600&fit=crop)",
-            }}
+        <div className="relative overflow-hidden mx-auto max-w-[1280px] h-[480px] rounded-5xl">
+          <img
+            src={artist.image}
+            alt={artist.name}
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/1280x480/545F73/FFFFFF?text=${encodeURIComponent(artist.name)}`; }}
           />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to top, rgba(70,52,38,0.8) 0%, transparent 60%)",
-            }}
-          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(70,52,38,0.85)] via-[rgba(70,52,38,0.3)] to-transparent" />
           <div className="relative z-10 flex flex-col items-center justify-end h-full pb-12">
-            {/* Avatar */}
-            <div
-              className="w-48 h-48 rounded-full bg-cover bg-center mb-4"
-              style={{
-                backgroundImage: "url(https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=192&h=192&fit=crop)",
-                border: "8px solid #FCF9F9",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-              }}
-            />
-            {/* Badge */}
-            <span
-              className="px-4 py-1.5 rounded-full mb-2"
-              style={{
-                backgroundColor: "#A43073",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 2,
-                color: "#FFFFFF",
-                textTransform: "uppercase",
-              }}
-            >
-              FEATURED ARTIST
-            </span>
-            {/* Verified */}
-            <div className="flex items-center gap-1.5 mb-2">
-              <CheckCircle size={14} color="#FCF9F9" />
-              <span style={{ fontSize: 12, color: "#FCF9F9" }}>Verified Vault Member</span>
-            </div>
-            {/* Name */}
-            <h1
-              style={{
-                fontWeight: 600,
-                fontSize: 72,
-                letterSpacing: -3.6,
-                color: "#F6F3F3",
-                lineHeight: "72px",
-              }}
-            >
-              PLK
+            <Avatar className="w-48 h-48 border-[8px] border-background shadow-2xl mb-4">
+              <AvatarImage src={artist.image} />
+              <AvatarFallback className="text-4xl font-bold bg-surface-secondary">{artist.name[0]}</AvatarFallback>
+            </Avatar>
+            {artist.verified && (
+              <>
+                <Badge className="bg-rose-500 hover:bg-rose-500/90 text-white font-bold text-[10px] tracking-[2px] uppercase border-0 mb-2">
+                  FEATURED ARTIST
+                </Badge>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <CheckCircle size={14} className="text-background" />
+                  <span className="text-xs text-background">Verified Vault Member</span>
+                </div>
+              </>
+            )}
+            <h1 className="font-semibold text-[72px] leading-[72px] text-surface-secondary" style={{ letterSpacing: -3.6 }}>
+              {artist.name}
             </h1>
-            {/* Stats */}
-            <p className="mt-2" style={{ fontSize: 16, color: "#FCF9F9" }}>
-              6 544 546 auditeurs mensuels
-            </p>
-            {/* Buttons */}
+            <p className="mt-2 text-base text-background">{artist.monthlyListeners} auditeurs mensuels</p>
             <div className="flex gap-4 mt-6">
-              <button
-                className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-transform hover:scale-105"
-                style={{ backgroundColor: "#545F73" }}
+              <Button
+                className={`rounded-full px-6 py-5 font-semibold text-sm gap-2 ${
+                  subscribed ? "bg-rose-500 hover:bg-rose-500/90" : "bg-secondary hover:bg-secondary/90"
+                } text-white`}
+                onClick={() => setSubscribed(!subscribed)}
               >
-                Subscribe <Star size={14} />
-              </button>
-              <button
-                className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-transform hover:scale-105"
-                style={{ backgroundColor: "rgba(164,48,115,0.84)" }}
+                {subscribed ? "Subscribed" : "Subscribe"} <Star size={14} fill={subscribed ? "currentColor" : "none"} />
+              </Button>
+              <Button
+                className="rounded-full px-6 py-5 bg-rose-500/85 hover:bg-rose-500/75 text-white font-semibold text-sm gap-2"
+                onClick={handlePlayAll}
               >
-                Buy Now <ShoppingCart size={14} />
-              </button>
+                <Play size={14} fill="white" /> Play All
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-full px-5 py-5 border-white/20 text-white hover:bg-white/10"
+                onClick={handleShare}
+              >
+                <Share2 size={14} />
+                {shared ? " Copied!" : " Share"}
+              </Button>
             </div>
           </div>
         </div>
@@ -122,136 +109,77 @@ const ArtistProfile = () => {
       <div className="max-w-[1280px] mx-auto px-8 py-12 flex gap-8">
         {/* Left Column */}
         <div className="flex-[6]">
-          {/* Sonic Artifacts */}
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <span
-                  style={{
-                    fontWeight: 900,
-                    fontSize: 10,
-                    letterSpacing: 2,
-                    color: "#A43073",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <Badge className="bg-transparent text-rose-500 hover:bg-transparent px-0 font-black text-[10px] tracking-[2px] uppercase border-0">
                   LATEST RELEASES
-                </span>
-                <h2
-                  className="mt-1"
-                  style={{
-                    fontWeight: 900,
-                    fontSize: 30,
-                    letterSpacing: -0.9,
-                    color: "#1B1B1C",
-                  }}
-                >
+                </Badge>
+                <h2 className="mt-1 font-black text-[30px] text-slate-heading" style={{ letterSpacing: -0.9 }}>
                   Sonic Artifacts
                 </h2>
               </div>
-              <a
-                href="#"
-                className="hover:opacity-70 transition-opacity"
-                style={{ fontSize: 14, fontWeight: 500, color: "#545F73" }}
-              >
-                View Discography →
-              </a>
             </div>
 
             <div className="flex flex-col gap-4">
-              {tracks.map((track) => (
-                <div
-                  key={track.num}
-                  className="flex items-center gap-5 px-6 py-4 transition-all hover:scale-[1.01] cursor-pointer"
-                  style={{
-                    backgroundColor: "rgba(253,242,242,0.4)",
-                    backdropFilter: "blur(6px)",
-                    borderRadius: 48,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 900,
-                      color: "#1B1B1C",
-                      opacity: 0.4,
-                      minWidth: 24,
-                    }}
-                  >
-                    {track.num}
-                  </span>
-                  <div
-                    className="w-14 h-14 bg-cover bg-center flex-shrink-0"
-                    style={{
-                      borderRadius: 6,
-                      backgroundImage: `url(${track.image})`,
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 16, fontWeight: 700, color: "#545F73" }}>
-                      {track.title}
-                    </p>
-                    <p style={{ fontSize: 12, color: "#4D4545" }}>
-                      From '{track.from}' · {track.duration}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button className="hover:opacity-70 transition-opacity">
-                      <Heart size={18} color="#7F7575" />
-                    </button>
-                    <button className="hover:opacity-70 transition-opacity">
-                      <MoreHorizontal size={18} color="#7F7575" />
-                    </button>
-                    <button
-                      className="w-10 h-10 rounded-full flex items-center justify-center hover:scale-110 transition-transform"
-                      style={{ backgroundColor: "#545F73" }}
-                    >
-                      <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              {artistTracks.map((track, i) => {
+                const isCurrent = currentTrack?.id === track.id;
+                const isTrackLiked = liked.has(track.id);
 
-          {/* Gallery */}
-          <div className="mt-12">
-            <span
-              style={{
-                fontWeight: 900,
-                fontSize: 10,
-                letterSpacing: 2,
-                color: "#A43073",
-                textTransform: "uppercase",
-              }}
-            >
-              VISUAL ARCHIVE
-            </span>
-            <h2
-              className="mt-1 mb-6"
-              style={{
-                fontWeight: 900,
-                fontSize: 30,
-                letterSpacing: -0.9,
-                color: "#1B1B1C",
-              }}
-            >
-              Gallery
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {galleryImages.map((img, i) => (
-                <div
-                  key={i}
-                  className={`bg-cover bg-center transition-transform hover:scale-[1.03] cursor-pointer ${
-                    i === 0 ? "col-span-2 h-[200px]" : i === 1 ? "row-span-2 h-full" : "h-[200px]"
-                  }`}
-                  style={{
-                    borderRadius: 16,
-                    backgroundImage: `url(${img})`,
-                    minHeight: 150,
-                  }}
-                />
-              ))}
+                return (
+                  <div
+                    key={track.id}
+                    className={`flex items-center gap-5 px-6 py-4 rounded-5xl transition-all cursor-pointer ${
+                      isCurrent ? "bg-rose-50" : "bg-accent/40 hover:bg-accent/60"
+                    }`}
+                    style={{ backdropFilter: "blur(6px)" }}
+                    onClick={() => playTrack(track, artistTracks)}
+                  >
+                    <span className="text-sm font-black text-slate-heading/40 min-w-[24px]">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <img
+                      src={track.cover}
+                      alt={track.title}
+                      className="w-14 h-14 rounded-md object-cover flex-shrink-0"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/56x56/F0EDED/7F7575?text=♪"; }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-base font-bold ${isCurrent ? "text-rose-500" : "text-slate-sub"}`}>
+                        {track.title}
+                      </p>
+                      <p className="text-xs text-slate-body">From '{track.album}' · {track.duration}</p>
+                    </div>
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`w-8 h-8 rounded-full ${isTrackLiked ? "text-rose-500" : "text-slate-muted hover:text-rose-500"}`}
+                        onClick={() => toggleLike(track.id)}
+                      >
+                        <Heart size={18} fill={isTrackLiked ? "currentColor" : "none"} />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full hover:bg-rose-50">
+                        <MoreHorizontal size={18} className="text-slate-muted" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        className={`w-10 h-10 rounded-full ${isCurrent && isPlaying ? "bg-rose-500" : "bg-secondary"} hover:opacity-90`}
+                        onClick={() => isCurrent ? togglePlay() : playTrack(track, artistTracks)}
+                      >
+                        {isCurrent && isPlaying
+                          ? <Pause size={16} className="text-white" />
+                          : <Play size={16} className="text-white" fill="white" />
+                        }
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {artistTracks.length === 0 && (
+                <p className="text-slate-muted text-sm py-8 text-center">No tracks available for this artist yet.</p>
+              )}
             </div>
           </div>
         </div>
@@ -259,133 +187,68 @@ const ArtistProfile = () => {
         {/* Right Column */}
         <div className="flex-[3]">
           {/* Live Dates */}
-          <div
-            className="p-8"
-            style={{ backgroundColor: "#F6F3F3", borderRadius: 32 }}
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <Calendar size={20} color="#A43073" />
-              <h3 style={{ fontSize: 24, fontWeight: 700, color: "#545F73" }}>
-                Live Dates
-              </h3>
-            </div>
-
-            <div className="flex flex-col gap-5">
-              {liveDates.map((date, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div
-                    className="w-[60px] h-[59px] flex flex-col items-center justify-center flex-shrink-0"
-                    style={{
-                      backgroundColor: "#FCF9F9",
-                      borderRadius: 48,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "#A43073",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {date.month}
-                    </span>
-                    <span
-                      style={{ fontSize: 20, fontWeight: 700, color: "#545F73" }}
-                    >
-                      {date.day}
-                    </span>
+          <Card className="rounded-4xl border-0 shadow-none bg-surface-secondary">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <Calendar size={20} className="text-rose-500" />
+                <h3 className="text-2xl font-bold text-slate-sub">Live Dates</h3>
+              </div>
+              <div className="flex flex-col gap-5">
+                {liveDates.map((date, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="w-[60px] h-[59px] flex flex-col items-center justify-center flex-shrink-0 bg-background rounded-5xl">
+                      <span className="text-[10px] font-bold text-rose-500 uppercase">{date.month}</span>
+                      <span className="text-xl font-bold text-slate-sub">{date.day}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-sub">{date.city}</p>
+                      <p className="text-xs text-slate-body">{date.country}</p>
+                      <span className={`text-[10px] uppercase ${date.available ? "font-bold text-rose-500" : "text-slate-muted opacity-50"}`}>
+                        {date.status}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#545F73" }}>
-                      {date.city}
-                    </p>
-                    <p style={{ fontSize: 12, color: "#4D4545" }}>{date.country}</p>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: date.available ? 700 : 400,
-                        color: date.available ? "#A43073" : "#7F7575",
-                        opacity: date.available ? 1 : 0.5,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {date.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Exclusives / Merch */}
+          {/* Merch */}
           <div className="mt-8">
             <div className="flex items-baseline justify-between mb-6">
-              <h3 style={{ fontSize: 24, fontWeight: 700, color: "#545F73" }}>
-                Exclusives
-              </h3>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#4D4545" }}>
-                4 Items
-              </span>
+              <h3 className="text-2xl font-bold text-slate-sub">Exclusives</h3>
+              <span className="text-xs font-bold text-slate-body">4 Items</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {merch.map((item) => (
-                <div
-                  key={item.name}
-                  className="relative overflow-hidden cursor-pointer transition-transform hover:scale-[1.03]"
-                  style={{ backgroundColor: "#F0EDED", borderRadius: 16 }}
-                >
-                  <div
-                    className="w-full h-[140px] bg-cover bg-center"
-                    style={{ backgroundImage: `url(${item.image})` }}
-                  />
-                  {item.limited && (
-                    <span
-                      className="absolute top-3 right-3 px-3 py-1 rounded-full"
-                      style={{
-                        backgroundColor: "#545F73",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "#FFFFFF",
-                      }}
-                    >
-                      Limited
-                    </span>
-                  )}
-                  <div className="p-3">
-                    <p style={{ fontSize: 12, fontWeight: 600, color: "#1B1B1C" }}>
-                      {item.name}
-                    </p>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#A43073" }}>
-                      {item.price}
-                    </p>
+                <Card key={item.name} className="rounded-2xl border-0 shadow-none bg-surface-tertiary overflow-hidden hover:scale-[1.03] transition-transform cursor-pointer">
+                  <div className="relative">
+                    <img src={item.image} alt={item.name} className="w-full h-[140px] object-cover" />
+                    {item.limited && (
+                      <Badge className="absolute top-3 right-3 bg-secondary hover:bg-secondary text-white font-bold text-[10px] border-0">
+                        Limited
+                      </Badge>
+                    )}
                   </div>
-                </div>
+                  <CardContent className="p-3">
+                    <p className="text-xs font-semibold text-slate-heading">{item.name}</p>
+                    <p className="text-sm font-bold text-rose-500">{item.price}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-            <button
-              className="w-full mt-4 py-3 text-center text-sm font-medium transition-all hover:opacity-70"
-              style={{
-                border: "1px solid rgba(208,196,196,0.3)",
-                borderRadius: 48,
-                color: "#545F73",
-              }}
-            >
+            <Button variant="outline" className="w-full mt-4 rounded-5xl text-sm font-medium text-slate-sub hover:bg-rose-50">
               Shop All Merch
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer
-        className="py-12 text-center"
-        style={{ borderTop: "1px solid rgba(208,196,196,0.3)" }}
-      >
-        <p style={{ fontSize: 12, color: "#7F7575" }}>
-          © 2026 Sonic Atelier. All rights reserved.
-        </p>
+      <footer className="py-12 text-center border-t">
+        <p className="text-xs text-slate-muted">© 2026 Sonic Atelier. All rights reserved.</p>
       </footer>
+
+      <MiniPlayer />
     </div>
   );
 };

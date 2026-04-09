@@ -1,15 +1,22 @@
+import { useState } from "react";
 import Navbar from "../components/Navbar";
-import { Check, Headphones, Users } from "lucide-react";
+import MiniPlayer from "../components/MiniPlayer";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, Headphones, Users, Loader2 } from "lucide-react";
+import { stripePromise } from "@/lib/stripe";
 
 const plans = [
   {
     name: "Free",
+    priceId: null,
     price: "$0",
     period: "/forever",
-    bg: "#F6F3F3",
+    bg: "bg-surface-secondary",
     border: false,
     popular: false,
-    buttonStyle: "outline" as const,
+    filled: false,
     buttonLabel: "Start Listening",
     features: [
       { text: "Standard Audio Quality", active: true },
@@ -19,12 +26,13 @@ const plans = [
   },
   {
     name: "Standard",
+    priceId: "price_standard_placeholder",
     price: "$9.99",
     period: "/month",
-    bg: "#FFFFFF",
+    bg: "bg-card",
     border: true,
     popular: true,
-    buttonStyle: "filled" as const,
+    filled: true,
     buttonLabel: "Choose Plan",
     features: [
       { text: "High-Fidelity Audio (320kbps)", active: true },
@@ -35,12 +43,13 @@ const plans = [
   },
   {
     name: "Premium",
+    priceId: "price_premium_placeholder",
     price: "$19.99",
     period: "/month",
-    bg: "#F6F3F3",
+    bg: "bg-surface-secondary",
     border: false,
     popular: false,
-    buttonStyle: "outline" as const,
+    filled: false,
     buttonLabel: "Choose Plan",
     features: [
       { text: "Lossless Spatial Audio", active: true },
@@ -52,39 +61,40 @@ const plans = [
 ];
 
 const Pricing = () => {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handleCheckout = async (priceId: string | null, planName: string) => {
+    if (!priceId) return; // Free plan
+    if (!stripePromise) {
+      alert("Stripe is not configured yet. Add VITE_STRIPE_PUBLISHABLE_KEY to your .env file.");
+      return;
+    }
+    setLoadingPlan(planName);
+    try {
+      const stripe = await stripePromise;
+      // In production, you'd call your backend to create a Checkout Session
+      // For now, we redirect to a Stripe payment link placeholder
+      alert(`Stripe Checkout would open for plan: ${planName} (${priceId}). Configure your Stripe price IDs and backend to enable real payments.`);
+    } catch (err) {
+      console.error("Stripe error:", err);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
-    <div style={{ backgroundColor: "#FCF9F9", minHeight: "100vh" }}>
+    <div className="bg-background min-h-screen pb-20">
       <Navbar />
 
       {/* Header */}
       <div className="pt-32 pb-16 text-center max-w-[800px] mx-auto px-8">
-        <span
-          style={{
-            fontWeight: 900,
-            fontSize: 10,
-            letterSpacing: 2,
-            color: "#A43073",
-            textTransform: "uppercase",
-          }}
-        >
+        <Badge className="bg-transparent text-rose-500 hover:bg-transparent px-0 font-black text-[10px] tracking-[2px] uppercase border-0">
           MEMBERSHIP
-        </span>
-        <h1
-          className="mt-3"
-          style={{
-            fontWeight: 800,
-            fontSize: 72,
-            lineHeight: "72px",
-            letterSpacing: -3.6,
-            color: "#1B1B1C",
-          }}
-        >
+        </Badge>
+        <h1 className="mt-3 font-extrabold text-[72px] leading-[72px] text-slate-heading" style={{ letterSpacing: -3.6 }}>
           Invest in Sound.
         </h1>
-        <p
-          className="mt-6"
-          style={{ fontSize: 18, color: "#4D4545", lineHeight: "28px" }}
-        >
+        <p className="mt-6 text-lg text-slate-body leading-7">
           Choose the plan that fits your listening style. Upgrade anytime to unlock the full vault experience.
         </p>
       </div>
@@ -92,168 +102,97 @@ const Pricing = () => {
       {/* Pricing Cards */}
       <div className="max-w-[1080px] mx-auto px-8 flex gap-6">
         {plans.map((plan) => (
-          <div
+          <Card
             key={plan.name}
-            className="flex-1 relative p-8 flex flex-col"
-            style={{
-              backgroundColor: plan.bg,
-              borderRadius: 32,
-              border: plan.border ? "2px solid #A43073" : "none",
-              boxShadow: plan.border
-                ? "0 8px 40px rgba(164,48,115,0.1)"
-                : "none",
-            }}
+            className={`flex-1 relative rounded-4xl border-0 shadow-none ${plan.bg} ${
+              plan.border ? "ring-2 ring-rose-500 shadow-[0_8px_40px_rgba(164,48,115,0.1)]" : ""
+            }`}
           >
             {plan.popular && (
-              <span
-                className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full"
-                style={{
-                  backgroundColor: "#A43073",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: 2,
-                  color: "#FFFFFF",
-                  textTransform: "uppercase",
-                }}
-              >
+              <Badge className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-rose-500 hover:bg-rose-500 text-white font-bold text-[10px] tracking-[2px] uppercase border-0 px-5 py-1.5">
                 MOST POPULAR
-              </span>
+              </Badge>
             )}
+            <CardHeader className="p-8 pb-0">
+              <CardTitle className="text-2xl font-bold text-slate-sub">{plan.name}</CardTitle>
+              <div className="flex items-baseline gap-1 mt-4">
+                <span className="text-5xl font-black text-slate-heading" style={{ letterSpacing: -2 }}>
+                  {plan.price}
+                </span>
+                <span className="text-base text-slate-muted">{plan.period}</span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 flex flex-col flex-1">
+              <div className="flex flex-col gap-4 mb-8 flex-1">
+                {plan.features.map((feature) => (
+                  <div key={feature.text} className="flex items-center gap-3">
+                    <Check
+                      size={16}
+                      className={plan.border ? "text-rose-500" : "text-slate-body"}
+                      style={{ opacity: feature.active ? 1 : 0.4 }}
+                    />
+                    <span
+                      className={`text-sm ${
+                        plan.border ? "text-slate-heading font-medium" : "text-slate-body"
+                      } ${!feature.active ? "opacity-40 line-through" : ""}`}
+                    >
+                      {feature.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
-            <h3
-              className="mb-4"
-              style={{ fontSize: 24, fontWeight: 700, color: "#545F73" }}
-            >
-              {plan.name}
-            </h3>
-            <div className="flex items-baseline gap-1 mb-8">
-              <span
-                style={{ fontSize: 48, fontWeight: 900, color: "#1B1B1C", letterSpacing: -2 }}
+              <Button
+                variant={plan.filled ? "default" : "outline"}
+                onClick={() => handleCheckout(plan.priceId, plan.name)}
+                disabled={loadingPlan === plan.name}
+                className={`w-full rounded-full py-6 text-sm font-semibold transition-all hover:scale-[1.03] ${
+                  plan.filled
+                    ? "bg-secondary hover:bg-secondary/90 text-white shadow-lg"
+                    : "text-slate-sub hover:bg-rose-50"
+                }`}
               >
-                {plan.price}
-              </span>
-              <span style={{ fontSize: 16, color: "#7F7575" }}>{plan.period}</span>
-            </div>
-
-            <div className="flex flex-col gap-4 mb-8 flex-1">
-              {plan.features.map((feature) => (
-                <div key={feature.text} className="flex items-center gap-3">
-                  <Check
-                    size={16}
-                    color={plan.border ? "#A43073" : "#4D4545"}
-                    style={{ opacity: feature.active ? 1 : 0.4 }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 14,
-                      color: plan.border ? "#1B1B1C" : "#4D4545",
-                      fontWeight: plan.border ? 500 : 400,
-                      opacity: feature.active ? 1 : 0.4,
-                      textDecoration: feature.active ? "none" : "line-through",
-                    }}
-                  >
-                    {feature.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              className="w-full py-3.5 rounded-full text-sm font-semibold transition-all hover:scale-[1.03]"
-              style={
-                plan.buttonStyle === "filled"
-                  ? {
-                      backgroundColor: "#545F73",
-                      color: "#FFFFFF",
-                      boxShadow: "0 4px 16px rgba(84,95,115,0.3)",
-                    }
-                  : {
-                      backgroundColor: "transparent",
-                      color: "#545F73",
-                      border: "1px solid rgba(208,196,196,0.3)",
-                    }
-              }
-            >
-              {plan.buttonLabel}
-            </button>
-          </div>
+                {loadingPlan === plan.name ? <Loader2 size={16} className="animate-spin" /> : plan.buttonLabel}
+              </Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
       {/* Beyond Section */}
       <div className="max-w-[1080px] mx-auto px-8 py-24">
         <div className="flex gap-12 items-center">
-          {/* Image */}
-          <div
-            className="flex-1 h-[400px] relative overflow-hidden"
-            style={{ borderRadius: 32 }}
-          >
+          <div className="flex-1 h-[400px] relative overflow-hidden rounded-4xl">
             <div
               className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  "url(https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&h=400&fit=crop)",
-              }}
+              style={{ backgroundImage: "url(https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&h=400&fit=crop)" }}
             />
-            <div
-              className="absolute inset-0"
-              style={{
-                background: "linear-gradient(135deg, rgba(164,48,115,0.1) 0%, transparent 60%)",
-              }}
-            />
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent" />
           </div>
 
-          {/* Text */}
           <div className="flex-1">
-            <h2
-              style={{
-                fontWeight: 800,
-                fontSize: 30,
-                letterSpacing: -0.9,
-                color: "#1B1B1C",
-              }}
-            >
+            <h2 className="font-extrabold text-[30px] text-slate-heading" style={{ letterSpacing: -0.9 }}>
               Beyond just a stream, it's an archive.
             </h2>
             <div className="flex flex-col gap-8 mt-8">
               <div className="flex gap-4 items-start">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: "#FDF2F2" }}
-                >
-                  <Headphones size={20} color="#A43073" />
+                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-rose-50">
+                  <Headphones size={20} className="text-rose-500" />
                 </div>
                 <div>
-                  <h4
-                    style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1C" }}
-                  >
-                    Lossless Precision
-                  </h4>
-                  <p
-                    className="mt-1"
-                    style={{ fontSize: 14, color: "#4D4545", lineHeight: "23px" }}
-                  >
+                  <h4 className="text-base font-bold text-slate-heading">Lossless Precision</h4>
+                  <p className="mt-1 text-sm text-slate-body leading-[23px]">
                     Experience every note as the artist intended, with studio-quality lossless audio streaming.
                   </p>
                 </div>
               </div>
               <div className="flex gap-4 items-start">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: "#FDF2F2" }}
-                >
-                  <Users size={20} color="#A43073" />
+                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 bg-rose-50">
+                  <Users size={20} className="text-rose-500" />
                 </div>
                 <div>
-                  <h4
-                    style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1C" }}
-                  >
-                    Human Curation
-                  </h4>
-                  <p
-                    className="mt-1"
-                    style={{ fontSize: 14, color: "#4D4545", lineHeight: "23px" }}
-                  >
+                  <h4 className="text-base font-bold text-slate-heading">Human Curation</h4>
+                  <p className="mt-1 text-sm text-slate-body leading-[23px]">
                     No algorithms. Real curators handpick every playlist and recommendation just for you.
                   </p>
                 </div>
@@ -263,15 +202,11 @@ const Pricing = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer
-        className="py-12 text-center"
-        style={{ borderTop: "1px solid rgba(208,196,196,0.3)" }}
-      >
-        <p style={{ fontSize: 12, color: "#7F7575" }}>
-          © 2026 Sonic Atelier. All rights reserved.
-        </p>
+      <footer className="py-12 text-center border-t">
+        <p className="text-xs text-slate-muted">© 2026 Sonic Atelier. All rights reserved.</p>
       </footer>
+
+      <MiniPlayer />
     </div>
   );
 };

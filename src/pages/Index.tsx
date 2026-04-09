@@ -1,176 +1,142 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { Heart, Play, Plus, ArrowRight } from "lucide-react";
+import MiniPlayer from "../components/MiniPlayer";
+import { usePlayer } from "@/contexts/PlayerContext";
+import { artists, tracks, playlists, getArtistTracks, getPlaylistTracks } from "@/data/musicData";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ArrowRight, Plus, Play } from "lucide-react";
 
 const trendingArtists = [
-  { name: "PLK", genre: "RAP", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=256&h=256&fit=crop", id: "plk" },
-  { name: "RAYE", genre: "POP", image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=256&h=256&fit=crop", id: "raye" },
-  { name: "Kanye West", genre: "RAP", image: "https://images.unsplash.com/photo-1598387993441-a364f854c3e1?w=256&h=256&fit=crop", id: "kanye" },
-  { name: "PEET", genre: "RAP", image: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=256&h=256&fit=crop", id: "peet" },
-  { name: "Naïka", genre: "INDIE POP", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=256&h=256&fit=crop", id: "naika" },
+  artists.find((a) => a.id === "plk")!,
+  artists.find((a) => a.id === "raye")!,
+  artists.find((a) => a.id === "kanye")!,
+  artists.find((a) => a.id === "pnl")!,
+  artists.find((a) => a.id === "naika")!,
 ];
 
 const discoveryArtists = [
-  { name: "KAYTRANADA", label: "New Release", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=500&fit=crop" },
-  { name: "JOSMAN", label: "Featured", image: "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=400&h=500&fit=crop" },
-  { name: "SAD NIGHT DYNAMITE", label: "Editor's Choice", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=500&fit=crop" },
+  { ...artists.find((a) => a.id === "kaytranada")!, label: "New Release" },
+  { ...artists.find((a) => a.id === "josman")!, label: "Featured" },
+  { ...artists.find((a) => a.id === "daftpunk")!, label: "Editor's Choice" },
 ];
 
 const latestReleases = [
-  { artist: "RAYE", album: "THIS MUSIC MAY CONTAIN HOPE.", image: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=242&h=242&fit=crop" },
-  { artist: "PLK", album: "Grand Garçon", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=242&h=242&fit=crop" },
-  { artist: "Justine Skye", album: "CANDY", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=242&h=242&fit=crop" },
-  { artist: "NeS", album: "Des pieds et de mains", image: "https://images.unsplash.com/photo-1511735111819-9a3f7709049c?w=242&h=242&fit=crop" },
+  { track: tracks.find((t) => t.id === "t4")!, artistName: "RAYE", album: "My 21st Century Blues" },
+  { track: tracks.find((t) => t.id === "t1")!, artistName: "PLK", album: "Grand Garçon" },
+  { track: tracks.find((t) => t.id === "t18")!, artistName: "Rihanna", album: "Unapologetic" },
+  { track: tracks.find((t) => t.id === "t16")!, artistName: "Stromae", album: "Cheese" },
 ];
 
-const suggestedArtists = [
-  { name: "J. Cole", genre: "RAP", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=56&h=56&fit=crop" },
-  { name: "Sébastien Tellier", genre: "ECLECTRO", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=56&h=56&fit=crop" },
-  { name: "Papooz", genre: "INDIE POP", image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=56&h=56&fit=crop" },
+const suggestedArtistsList = [
+  artists.find((a) => a.id === "jcole")!,
+  artists.find((a) => a.id === "tellier")!,
+  artists.find((a) => a.id === "kendrick")!,
 ];
 
 const genres = ["All Genres", "Ambient", "Neo-Classical", "Synthwave", "Lo-fi", "Experimental"];
 
 const Index = () => {
+  const { playTrack } = usePlayer();
+  const [activeGenre, setActiveGenre] = useState(0);
+  const [followed, setFollowed] = useState<Set<string>>(new Set());
+
+  const toggleFollow = (id: string) => {
+    setFollowed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   return (
-    <div style={{ backgroundColor: "#FCF9F9", minHeight: "100vh" }}>
+    <div className="bg-background min-h-screen pb-24">
       <Navbar />
 
       {/* Hero Section */}
-      <div className="px-8 pt-24 pb-0">
-        <div
-          className="relative overflow-hidden mx-auto"
-          style={{
-            borderRadius: 48,
-            maxWidth: 1280,
-            height: 520,
-            background: "#545F73",
-          }}
-        >
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: "url(https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1400&h=600&fit=crop)",
-              opacity: 0.4,
-            }}
+      <div className="px-8 pt-24">
+        <div className="relative overflow-hidden mx-auto max-w-[1280px] h-[520px] rounded-5xl bg-secondary">
+          <img
+            src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1400&h=600&fit=crop"
+            alt="Hero"
+            className="absolute inset-0 w-full h-full object-cover opacity-40"
           />
           <div className="relative z-10 flex flex-col justify-center h-full px-16 max-w-[800px]">
-            <h1
-              style={{
-                fontWeight: 900,
-                fontSize: 72,
-                lineHeight: "72px",
-                letterSpacing: -3.6,
-                color: "#FFFFFF",
-              }}
-            >
+            <h1 className="font-black text-[72px] leading-[72px] text-white" style={{ letterSpacing: -3.6 }}>
               Unlock Exclusive MUSIC, Merch & Moments
             </h1>
-            <p
-              className="mt-6"
-              style={{
-                fontSize: 20,
-                color: "#D8E3FB",
-                lineHeight: "30px",
-              }}
-            >
+            <p className="mt-6 text-xl text-[#D8E3FB] leading-[30px]">
               The Digital Gallery of Sound. Curating the finest auditory experiences for the modern collector.
             </p>
             <div className="flex gap-4 mt-8">
-              <button
-                className="px-8 py-3 rounded-full font-semibold text-sm text-white transition-transform hover:scale-105"
-                style={{ backgroundColor: "#545F73" }}
-              >
-                Join Now
-              </button>
-              <button
-                className="px-8 py-3 rounded-full font-semibold text-sm text-white transition-transform hover:scale-105"
-                style={{
-                  backgroundColor: "rgba(252,249,249,0.1)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  backdropFilter: "blur(8px)",
+              <Link to="/pricing">
+                <Button className="rounded-full px-8 py-6 bg-secondary hover:bg-secondary/90 text-white font-semibold text-sm">
+                  Join Now
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="rounded-full px-8 py-6 font-semibold text-sm text-white border-white/20 hover:bg-white/10"
+                style={{ backgroundColor: "rgba(252,249,249,0.1)", backdropFilter: "blur(8px)" }}
+                onClick={() => {
+                  const allTracks = tracks.slice(0, 10);
+                  playTrack(allTracks[0], allTracks);
                 }}
               >
-                Explore Vault
-              </button>
+                <Play size={14} className="mr-1" /> Explore Vault
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Trending Artists */}
-      <section style={{ backgroundColor: "#F6F3F3", padding: "48px 0", marginTop: 48 }}>
+      <section className="bg-surface-secondary mt-12 py-12">
         <div className="max-w-[1280px] mx-auto px-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <span
-                style={{
-                  fontWeight: 900,
-                  fontSize: 10,
-                  letterSpacing: 2,
-                  color: "#A43073",
-                  textTransform: "uppercase",
-                }}
-              >
+              <Badge className="bg-transparent text-rose-500 hover:bg-transparent px-0 font-black text-[10px] tracking-[2px] uppercase border-0">
                 CURATION
-              </span>
-              <h2
-                className="mt-1"
-                style={{
-                  fontWeight: 900,
-                  fontSize: 36,
-                  letterSpacing: -1.8,
-                  color: "#1B1B1C",
-                }}
-              >
+              </Badge>
+              <h2 className="mt-1 font-black text-4xl text-slate-heading" style={{ letterSpacing: -1.8 }}>
                 Trending Artists
               </h2>
             </div>
-            <a
-              href="#"
-              className="flex items-center gap-1 hover:opacity-70 transition-opacity"
-              style={{ fontSize: 14, fontWeight: 500, color: "#545F73" }}
-            >
+            <Button variant="ghost" className="text-slate-sub text-sm font-medium gap-1 hover:bg-rose-50">
               View Gallery <ArrowRight size={14} />
-            </a>
+            </Button>
           </div>
 
           <div className="flex gap-6 overflow-x-auto pb-4" style={{ scrollbarWidth: "none" }}>
             {trendingArtists.map((artist) => (
-              <Link
-                to={`/artist/${artist.id}`}
-                key={artist.name}
-                className="flex-shrink-0 group cursor-pointer"
-              >
-                <div
-                  className="w-[256px] h-[256px] bg-cover bg-center transition-transform group-hover:scale-[1.03]"
-                  style={{
-                    borderRadius: 32,
-                    backgroundImage: `url(${artist.image})`,
-                  }}
-                />
-                <p
-                  className="mt-3"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 2,
-                    color: "#7F7575",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {artist.genre}
-                </p>
-                <p
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: "#1B1B1C",
-                    letterSpacing: -0.5,
-                  }}
-                >
-                  {artist.name}
-                </p>
+              <Link to={`/artist/${artist.id}`} key={artist.id} className="flex-shrink-0 group cursor-pointer">
+                <div className="relative w-[256px] h-[256px] rounded-4xl overflow-hidden">
+                  <img
+                    src={artist.image}
+                    alt={artist.name}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-[1.05]"
+                    onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/256x256/545F73/FFFFFF?text=${encodeURIComponent(artist.name)}`; }}
+                  />
+                  {/* Play button on hover */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <Button
+                      size="icon"
+                      className="w-12 h-12 rounded-full bg-white/90 hover:bg-white text-slate-heading opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const artistTracks = getArtistTracks(artist.id);
+                        if (artistTracks.length) playTrack(artistTracks[0], artistTracks);
+                      }}
+                    >
+                      <Play size={20} fill="currentColor" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="mt-3 text-[10px] font-bold tracking-[2px] text-slate-muted uppercase">{artist.genre}</p>
+                <p className="text-xl font-bold text-slate-heading" style={{ letterSpacing: -0.5 }}>{artist.name}</p>
               </Link>
             ))}
           </div>
@@ -180,166 +146,94 @@ const Index = () => {
       {/* Discovery & Genres */}
       <section className="max-w-[1280px] mx-auto px-8 py-16">
         <div className="flex gap-12">
-          {/* Left column */}
           <div className="flex-1">
-            <span
-              style={{
-                fontWeight: 900,
-                fontSize: 10,
-                letterSpacing: 2,
-                color: "#A43073",
-                textTransform: "uppercase",
-              }}
-            >
+            <Badge className="bg-transparent text-rose-500 hover:bg-transparent px-0 font-black text-[10px] tracking-[2px] uppercase border-0">
               EXPLORE
-            </span>
-            <h2
-              className="mt-1"
-              style={{
-                fontWeight: 900,
-                fontSize: 36,
-                letterSpacing: -1.8,
-                color: "#1B1B1C",
-              }}
-            >
+            </Badge>
+            <h2 className="mt-1 font-black text-4xl text-slate-heading" style={{ letterSpacing: -1.8 }}>
               Discovery
             </h2>
-            <p
-              className="mt-4 max-w-md"
-              style={{ fontSize: 16, lineHeight: "26px", color: "#4D4545" }}
-            >
+            <p className="mt-4 max-w-md text-base leading-[26px] text-slate-body">
               Explore a curated selection of artists across genres. From ambient soundscapes to experimental beats, find your next obsession.
             </p>
             <div className="flex flex-wrap gap-3 mt-6">
               {genres.map((genre, i) => (
-                <button
+                <Button
                   key={genre}
-                  className="px-5 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105"
-                  style={
-                    i === 0
-                      ? { backgroundColor: "#545F73", color: "#FFFFFF" }
-                      : { backgroundColor: "#FDF2F2", color: "#756E6E" }
-                  }
+                  className={`rounded-full text-sm font-medium transition-all hover:scale-105 ${
+                    activeGenre === i
+                      ? "bg-secondary hover:bg-secondary/90 text-white"
+                      : "bg-rose-50 text-slate-muted hover:bg-rose-100"
+                  }`}
+                  onClick={() => setActiveGenre(i)}
                 >
                   {genre}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          {/* Right column - 3 artist cards */}
           <div className="flex gap-4">
             {discoveryArtists.map((artist) => (
-              <div
-                key={artist.name}
-                className="relative w-[200px] h-[280px] overflow-hidden cursor-pointer group"
-                style={{ borderRadius: 32 }}
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform group-hover:scale-110"
-                  style={{ backgroundImage: `url(${artist.image})` }}
+              <Link to={`/artist/${artist.id}`} key={artist.id} className="relative w-[200px] h-[280px] overflow-hidden rounded-4xl cursor-pointer group">
+                <img
+                  src={artist.image}
+                  alt={artist.name}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110"
+                  onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/200x280/545F73/FFFFFF?text=${encodeURIComponent(artist.name)}`; }}
                 />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)",
-                  }}
-                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                 <div className="absolute bottom-5 left-5 right-5">
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: 2,
-                      color: "#FFD8E7",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {artist.label}
-                  </span>
-                  <p
-                    className="mt-1"
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: "#FFFFFF",
-                      letterSpacing: -0.5,
-                    }}
-                  >
-                    {artist.name}
-                  </p>
+                  <span className="text-[10px] font-bold tracking-[2px] text-rose-100 uppercase">{artist.label}</span>
+                  <p className="mt-1 text-xl font-bold text-white" style={{ letterSpacing: -0.5 }}>{artist.name}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
       {/* Latest Releases */}
-      <section style={{ backgroundColor: "#F0EDED", padding: "64px 0" }}>
+      <section className="bg-surface-tertiary py-16">
         <div className="max-w-[1280px] mx-auto px-8">
           <div className="text-center mb-12">
-            <span
-              style={{
-                fontWeight: 900,
-                fontSize: 10,
-                letterSpacing: 2,
-                color: "#A43073",
-                textTransform: "uppercase",
-              }}
-            >
+            <Badge className="bg-transparent text-rose-500 hover:bg-transparent px-0 font-black text-[10px] tracking-[2px] uppercase border-0">
               LATEST RELEASES
-            </span>
-            <h2
-              className="mt-2"
-              style={{
-                fontWeight: 900,
-                fontSize: 36,
-                letterSpacing: -1.8,
-                color: "#1B1B1C",
-              }}
-            >
+            </Badge>
+            <h2 className="mt-2 font-black text-4xl text-slate-heading" style={{ letterSpacing: -1.8 }}>
               Latest Releases
             </h2>
-            <p
-              className="mt-3"
-              style={{ fontSize: 16, color: "#4D4545", lineHeight: "26px" }}
-            >
-              Fresh drops from the vault. Discover what's new.
-            </p>
+            <p className="mt-3 text-base text-slate-body leading-[26px]">Fresh drops from the vault.</p>
           </div>
 
           <div className="grid grid-cols-4 gap-6">
-            {latestReleases.map((release) => (
-              <div
-                key={release.album}
-                className="p-4 transition-transform hover:scale-[1.03] cursor-pointer"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 32,
-                }}
+            {latestReleases.map(({ track, artistName, album }) => (
+              <Card
+                key={track.id}
+                className="rounded-4xl border-0 shadow-none hover:scale-[1.03] transition-transform cursor-pointer overflow-hidden group"
+                onClick={() => playTrack(track, tracks)}
               >
-                <div
-                  className="w-full aspect-square bg-cover bg-center"
-                  style={{
-                    borderRadius: 6,
-                    backgroundImage: `url(${release.image})`,
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <p
-                  className="mt-4"
-                  style={{ fontSize: 16, fontWeight: 700, color: "#1B1B1C" }}
-                >
-                  {release.artist}
-                </p>
-                <p
-                  className="mt-1"
-                  style={{ fontSize: 14, color: "#4D4545" }}
-                >
-                  {release.album}
-                </p>
-              </div>
+                <CardContent className="p-4">
+                  <div className="relative">
+                    <img
+                      src={track.cover}
+                      alt={album}
+                      className="w-full aspect-square object-cover rounded-md shadow-lg"
+                      onError={(e) => { (e.target as HTMLImageElement).src = `https://placehold.co/242x242/F0EDED/7F7575?text=${encodeURIComponent(artistName)}`; }}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-md flex items-center justify-center">
+                      <Button
+                        size="icon"
+                        className="w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-heading opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                      >
+                        <Play size={18} fill="currentColor" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-base font-bold text-slate-heading">{artistName}</p>
+                  <p className="mt-1 text-sm text-slate-body">{album}</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -347,56 +241,47 @@ const Index = () => {
 
       {/* Suggested for You */}
       <section className="max-w-[1280px] mx-auto px-8 py-16">
-        <h2
-          style={{
-            fontWeight: 900,
-            fontSize: 30,
-            letterSpacing: -0.9,
-            color: "#1B1B1C",
-          }}
-        >
+        <h2 className="font-black text-[30px] text-slate-heading" style={{ letterSpacing: -0.9 }}>
           Suggested for You
         </h2>
         <div className="flex gap-4 mt-8">
-          {suggestedArtists.map((artist) => (
+          {suggestedArtistsList.map((artist) => (
             <div
-              key={artist.name}
-              className="flex items-center gap-4 flex-1 px-5 py-3 transition-all hover:scale-[1.02] cursor-pointer"
-              style={{
-                backgroundColor: "#F6F3F3",
-                borderRadius: 9999,
-              }}
+              key={artist.id}
+              className="flex items-center gap-4 flex-1 px-5 py-3 bg-surface-secondary rounded-full hover:scale-[1.02] transition-all cursor-pointer"
             >
-              <div
-                className="w-14 h-14 rounded-full bg-cover bg-center flex-shrink-0"
-                style={{ backgroundImage: `url(${artist.image})` }}
-              />
-              <div className="flex-1 min-w-0">
-                <p style={{ fontSize: 16, fontWeight: 600, color: "#1B1B1C" }}>
-                  {artist.name}
-                </p>
-                <p style={{ fontSize: 12, color: "#4D4545" }}>{artist.genre}</p>
-              </div>
-              <button
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform"
-                style={{ backgroundColor: "#FFFFFF" }}
+              <Link to={`/artist/${artist.id}`}>
+                <Avatar className="w-14 h-14">
+                  <AvatarImage src={artist.image} />
+                  <AvatarFallback className="bg-surface-tertiary text-slate-muted">{artist.name[0]}</AvatarFallback>
+                </Avatar>
+              </Link>
+              <Link to={`/artist/${artist.id}`} className="flex-1 min-w-0">
+                <p className="text-base font-semibold text-slate-heading">{artist.name}</p>
+                <p className="text-xs text-slate-body">{artist.genre}</p>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`w-8 h-8 rounded-full flex-shrink-0 ${
+                  followed.has(artist.id)
+                    ? "bg-rose-500 text-white hover:bg-rose-500/80"
+                    : "bg-white hover:bg-white/80 text-slate-sub"
+                }`}
+                onClick={() => toggleFollow(artist.id)}
               >
-                <Plus size={16} color="#545F73" />
-              </button>
+                <Plus size={16} className={followed.has(artist.id) ? "rotate-45" : ""} />
+              </Button>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer
-        className="py-12 text-center"
-        style={{ borderTop: "1px solid rgba(208,196,196,0.3)" }}
-      >
-        <p style={{ fontSize: 12, color: "#7F7575" }}>
-          © 2026 Sonic Atelier. All rights reserved.
-        </p>
+      <footer className="py-12 text-center border-t">
+        <p className="text-xs text-slate-muted">© 2026 Sonic Atelier. All rights reserved.</p>
       </footer>
+
+      <MiniPlayer />
     </div>
   );
 };
